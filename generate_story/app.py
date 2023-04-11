@@ -4,6 +4,7 @@ import uuid
 import boto3
 import requests
 import datetime
+import re
 
 # Retrieve the secret from AWS Parameter Store
 
@@ -28,24 +29,26 @@ def save_story(story):
     table.put_item(Item=story)
 
 
+def extract_title(markdown):
+    # Look for the first line that starts with one or more "#" characters
+    match = re.search(r'^#+\s*(.*)$', markdown, re.MULTILINE)
+    if match:
+        # If a match is found, return the captured group (i.e. the title)
+        return match.group(1)
+    else:
+        # If no match is found, return None
+        return None
+
+
 def lambda_handler(event, context):
     # Retrieve the OpenAI API key from AWS Parameter Store
     openai_api_key = get_secret("/storysam/openai-key")
 
     prompt = '''
-    Create a story suitable for young children. Consider stories with simple sentence structures and familiar vocabulary for young readers. Use relatable characters and situations that children of this age can understand and empathize with.
-    Include elements of adventure, imagination, and humor to keep the stories engaging and entertaining.Keep in mind that the stories should also have a positive message or teach a valuable lesson for young readers. Consider using animals or other non-human characters as they can be relatable to young readers and allow for more imaginative elements to be incorporated. Use dialogue to give the characters personalities and make them more relatable to young readers. 
+    I want you to act as a storyteller. You will come up with an entertaining story for 6-8 years old children that is engaging, imaginative and captivating. Consider stories with simple sentence structures and familiar vocabulary for young readers. Use relatable characters and situations that children of this age can understand and empathize with.
+    Include elements of adventure, imagination, and humor to keep the stories engaging and entertaining. Keep in mind that the stories should also have a positive message or teach a valuable lesson for young readers. Consider using animals or other non-human characters as they can be relatable to young readers and allow for more imaginative elements to be incorporated. Use dialogue to give the characters personalities and make them more relatable to young readers. You may choose specific themes or topics for your storytelling session e.g., if it’s children then you can talk about animals; If it’s adults then history-based tales might engage them better etc.
 
-    Follow the following istructions:
-
-    - Use Markdown language with headers and proper format.
-    - Finish the moral from the story.
-
-    Topic: A young prince or princess who learns about responsibility and leadership as they rule their kingdom.
-
-    At the end, write a prompt to generate an image using DALLEE withe the following structure:
-
-    “Imagine a children book illustration with this idea: {principal idea of the story}”
+    Include the Title at the begining and the moral at the end of the story. Use Markdown language.
     
     '''
 
@@ -57,7 +60,7 @@ def lambda_handler(event, context):
     data = {
         'model': 'text-davinci-003',
         'prompt': prompt,
-        'temperature': 0.7,
+        'temperature': 0.9,
         'max_tokens': 1000,
         'top_p': 1,
         'frequency_penalty': 0,
@@ -68,12 +71,12 @@ def lambda_handler(event, context):
     response_json = response.json()
 
     # Return the chatbot's response
-    # chatbot_response = response_json['choices'][0]['text']
-    chatbot_response = '## Story'
+    chatbot_response = response_json['choices'][0]['text']
 
     # Save the story to DynamoDB
     story = {
         'id': uuid.uuid4().hex,
+        'title': extract_title(chatbot_response),
         'story': chatbot_response,
         'timestamp': datetime.datetime.now().isoformat()
     }

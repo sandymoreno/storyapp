@@ -45,7 +45,7 @@ Resources:
       - x86_64
       Policies: 
         - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
+        - DynamoDBReadPolicy:
             TableName: 'stories'
         - SSMParameterReadPolicy:
             ParameterName: 'storysam/*'
@@ -54,7 +54,7 @@ Resources:
           Type: HttpApi 
           Properties:
             Path: /story/{id}
-            Method: get          
+            Method: post          
   StoriesTable:
     Type: AWS::DynamoDB::Table
     Properties:
