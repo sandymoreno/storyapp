@@ -25,7 +25,7 @@ Resources:
       - x86_64
       Policies: 
         - AWSLambdaBasicExecutionRole
-        - DynamoDBCrudPolicy:
+        - DynamoDBWritePolicy:
             TableName: 'stories'
         - SSMParameterReadPolicy:
             ParameterName: 'storysam/*'
@@ -34,7 +34,27 @@ Resources:
           Type: HttpApi 
           Properties:
             Path: /story
-            Method: get
+            Method: post
+  ListStoriesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: list_stories/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+      - x86_64
+      Policies: 
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBReadPolicy:
+            TableName: 'stories'
+        - SSMParameterReadPolicy:
+            ParameterName: 'storysam/*'
+      Events:
+        Story:
+          Type: HttpApi 
+          Properties:
+            Path: /stories
+            Method: get                      
   GetStoryFunction:
     Type: AWS::Serverless::Function
     Properties:

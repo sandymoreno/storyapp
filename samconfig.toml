@@ -20,7 +20,7 @@ resolve_s3 = true
 s3_prefix = "storysam"
 region = "us-east-1"
 profile = "learner"
-disable_rollback = true
+disable_rollback = false
 image_repositories = []
 
 [default.package.parameters]
